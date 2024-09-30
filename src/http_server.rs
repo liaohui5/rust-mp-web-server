@@ -1,4 +1,4 @@
-use std::io::{Read, Result as IOResult, Write};
+use std::io::{BufReader, Result as IOResult, Write};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -35,11 +35,14 @@ pub fn listen(config: Config) -> IOResult<()> {
 }
 
 fn handle_request(mut stream: TcpStream, config: Arc<Config>) {
-    // 注意 buffer 是一个 u8 数组 [u8; 1024], 不是一个 Vec<u8>
-    let mut buffer = [0; 1024];
-    Read::read(&mut stream, &mut buffer).unwrap();
+    let buf_reader = BufReader::new(&mut stream);
 
-    let http_req_str = String::from_utf8(buffer.to_vec()).unwrap();
+    // 注意 buffer 是一个 u8 数组 [u8; 1024], 不是
+    // 一个 Vec<u8>, 所以需要调用 to_vec 方法转 vec
+    // 然后去解析字符串
+    let buffer = buf_reader.buffer().to_vec();
+
+    let http_req_str = String::from_utf8(buffer).unwrap();
 
     // 请求字符串
     // println!("{:?}", http_req_str);
@@ -58,7 +61,7 @@ fn handle_request(mut stream: TcpStream, config: Arc<Config>) {
     // println!("{:?}", response);
 
     print!("\x1b[22m\x1b[39m"); // 输出红色的调试信息
-    Write::write_all(&mut stream, response.as_bytes()).unwrap();
+    stream.write_all(response.as_bytes()).unwrap();
     stream.flush().unwrap();
 }
 

@@ -19,8 +19,8 @@ impl Config {
                     config.port = item.clone().parse()?;
                 }
 
-                // --dir or --path or --public-dir or --public-path
-                if item == "--dir" || item == "--path" || item == "--public-dir" || item == "--public-path" {
+                // --dir or --public-path
+                if item == "--dir" || item == "--public-path" {
                     config.path = item.to_string();
                 }
             }

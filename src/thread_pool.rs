@@ -1,5 +1,5 @@
-use std::thread;
 use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
 
 // Job 是一个闭包, 但闭包是未知大小的类型 ?Sized
 // 所以需要一个 Box 智能指针来包裹, 之后直接通过函数指针来调用
@@ -9,7 +9,7 @@ type Job = Box<dyn FnOnce() + Send + 'static>;
 #[allow(unused)]
 pub enum TaskMessage {
     NewTask(Job),
-    Exit
+    Exit,
 }
 
 // 实际执行任务的对象,用 id 来标记 thread, 就可以很方便的区分不同的线程
@@ -19,7 +19,7 @@ pub struct Worker {
     thread: Option<thread::JoinHandle<()>>,
 }
 impl Worker {
-    pub fn new(id:usize, receiver: Arc<Mutex<mpsc::Receiver<TaskMessage>>>) -> Worker {
+    pub fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<TaskMessage>>>) -> Worker {
         // 实例化 worker 需要传入 id 和 多线程引用计数指针
         // 指向一个 被互斥锁保护的 信道接收器对象
         // 信道对象接收 Job 类型的数据
@@ -35,7 +35,7 @@ impl Worker {
                     TaskMessage::NewTask(job) => {
                         println!("worker-{}-execute-task.", id);
                         job();
-                    },
+                    }
                     TaskMessage::Exit => {
                         // 终止线程: 停止接收信道对象发送的任务消息
                         // 退出 loop 循环, 那么这个线程自然就执行完了
@@ -82,12 +82,13 @@ impl ThreadPool {
     }
 
     pub fn execute<F>(&self, f: F)
-        // 为什么这样定义泛型? 因为 f 是一个跨线程传输的闭包
-        // 或者说闭包类型的数据就是应该这样定义泛型约束:
-        // FnOnce:  必须传入闭包
-        // Send:    可以跨线程传输的类型
-        // 'static: 让传入的闭包在程序运行期间都存活
-        where F: FnOnce() + Send + 'static
+    // 为什么这样定义泛型? 因为 f 是一个跨线程传输的闭包
+    // 或者说闭包类型的数据就是应该这样定义泛型约束:
+    // FnOnce:  必须传入闭包
+    // Send:    可以跨线程传输的类型
+    // 'static: 让传入的闭包在程序运行期间都存活
+    where
+        F: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
         self.sender.send(TaskMessage::NewTask(job)).unwrap();

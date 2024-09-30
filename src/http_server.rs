@@ -1,12 +1,12 @@
+use std::io::{Read, Result as IOResult, Write};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream};
 use std::str::FromStr;
-use std::time::Duration;
-use std::{ fs, thread };
-use std::io::{ Read, Write, Result as IOResult };
-use std::net::{ Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream };
 use std::sync::Arc;
+use std::time::Duration;
+use std::{fs, thread};
 
-use crate::thread_pool::ThreadPool;
 use crate::config::Config;
+use crate::thread_pool::ThreadPool;
 
 pub fn listen(config: Config) -> IOResult<()> {
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), config.port));
@@ -70,12 +70,15 @@ fn get_response(http_req_str: &str, config: Arc<Config>) -> (String, String) {
     println!("request-info:{method},{req_path},{protocol_version}");
 
     // 处理一些特殊的请求路径
-    let route_path = if req_path == "/" { // 映射首页文件
+    let route_path = if req_path == "/" {
+        // 映射首页文件
         "/index.html"
-    } else if req_path == "/sleep.html" { // 测试多线程
+    } else if req_path == "/sleep.html" {
+        // 测试多线程
         thread::sleep(Duration::from_secs(5));
         req_path
-    } else { // 其他情况
+    } else {
+        // 其他情况
         req_path
     };
 
@@ -89,7 +92,7 @@ fn get_response(http_req_str: &str, config: Arc<Config>) -> (String, String) {
 
     // 由于这是个简单的静态文件服务器,所以:
     // 不是 GET 请求或者文件不存在都应该返回 404
-    if method != "GET" || fs::metadata(res_file_path.as_str()).is_err(){
+    if method != "GET" || fs::metadata(res_file_path.as_str()).is_err() {
         let mut _404_file_path = public_path.clone();
         _404_file_path.push_str("/404.html");
 
@@ -106,7 +109,9 @@ fn get_response(http_req_str: &str, config: Arc<Config>) -> (String, String) {
 fn parse_http_info(http_req_str: &str) -> (&str, &str, &str) {
     // print!("\x1b[1m \x1b[31m");
     let http_info = http_req_str.lines().next().unwrap();
-    let methods = ["GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"];
+    let methods = [
+        "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH",
+    ];
 
     // parse request method
     let mut http_method = "GET";
@@ -130,7 +135,6 @@ fn parse_http_info(http_req_str: &str) -> (&str, &str, &str) {
     // print!("\x1b[22m \x1b[39m");
     (http_method, req_path, http_version)
 }
-
 
 #[cfg(test)]
 mod unit_tests {
@@ -166,7 +170,6 @@ mod unit_tests {
         assert_eq!(http_version, "HTTP/2.0");
     }
 
-
     #[test]
     fn should_be_parse_request_path() {
         let http_req_str = String::from("GET / HTTP/1.1\r\n");
@@ -182,4 +185,3 @@ mod unit_tests {
         assert_eq!(request_path, "/test.html?id=1");
     }
 }
-
